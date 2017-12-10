@@ -12,6 +12,7 @@
 #include <util/atomic.h>
 #include <avr/interrupt.h>
 #include <avr/power.h>  //unused?
+#include "M328P_Serial.h"
 
 #define KNOB	PINC0
 #define LED		PORTD6
@@ -182,6 +183,7 @@ int main(void)
 	initFootPedal();
 	initMotorPWM();
 	initADC();
+	SerialInit(9600);
 	sei();
 	
 	uint32_t ledBlinkTime = 0;
@@ -206,50 +208,59 @@ int main(void)
     while (1) 
     {
 			
-		// Reads pot and determines mode
-		knobsetting = readKnob();
-		if (knobsetting < mode0setting) mode = PRESSHOLD;
-		else if (knobsetting > mode2setting) mode = TAPONOFF;
-		else {
-			mode = AUTOMATIC;
-			setTime = (knobsetting - knoboffset) * knobslope + minimumTime;			// scales trim pot setting to milliseconds
-		}
+// 		// Reads pot and determines mode
+// 		knobsetting = readKnob();
+// 		if (knobsetting < mode0setting) mode = PRESSHOLD;
+// 		else if (knobsetting > mode2setting) mode = TAPONOFF;
+// 		else {
+// 			mode = AUTOMATIC;
+// 			setTime = (knobsetting - knoboffset) * knobslope + minimumTime;			// scales trim pot setting to milliseconds
+// 		}
+// 
+// 		// Gets the footpedal status and records the time if pressed
+// 		footpedal = checkPedal();
+// 		if (footpedal) startTime = millis();
+// 
+// 		// State Machine
+// 		switch (mode) {
+// 			case PRESSHOLD:
+// 				if (footpedal) softstart(mode);				// Turns ON if pedal just pressed
+// 				else if (PEDALISRELEASED) motor(OFF);		// Turns OFF is pedal is released
+// 				// Otherwise motor stays in last mode (full ON or OFF)
+// 				break;
+// 
+// 			case AUTOMATIC:
+// 				// Changes state when foot pedal is pressed
+// 				if (footpedal) {
+// 					if (motorOn) motor(OFF);	// Turns motor OFF if ON
+// 					else softstart(mode);		// Turns motor ON if OFF
+// 				}
+// 				// Turns motor OFF if enough time has elapsed
+// 				elapsedTime = millis() - startTime;
+// 				if (elapsedTime > setTime || elapsedTime > TIMEOUT) motor(OFF);			
+// 				// Otherwise motor stays in last mode (full ON or OFF)
+// 				break;
+// 
+// 			case TAPONOFF:
+// 				// Changes state when foot pedal is pressed
+// 				if (footpedal) {
+// 					if (motorOn) motor(OFF);	// Turns motor OFF if ON
+// 					else softstart(mode);		// Turns motor ON if OFF
+// 				}
+// 				// Turns motor OFF if the cat pushed the foot pedal
+// 				if (millis() - startTime > TIMEOUT) motor(OFF);
+// 				// Otherwise motor stays in last mode (full ON or OFF)
+// 				break;
+// 		}
 
-		// Gets the footpedal status and records the time if pressed
-		footpedal = checkPedal();
-		if (footpedal) startTime = millis();
-
-		// State Machine
-		switch (mode) {
-			case PRESSHOLD:
-				if (footpedal) softstart(mode);				// Turns ON if pedal just pressed
-				else if (PEDALISRELEASED) motor(OFF);		// Turns OFF is pedal is released
-				// Otherwise motor stays in last mode (full ON or OFF)
-				break;
-
-			case AUTOMATIC:
-				// Changes state when foot pedal is pressed
-				if (footpedal) {
-					if (motorOn) motor(OFF);	// Turns motor OFF if ON
-					else softstart(mode);		// Turns motor ON if OFF
-				}
-				// Turns motor OFF if enough time has elapsed
-				elapsedTime = millis() - startTime;
-				if (elapsedTime > setTime || elapsedTime > TIMEOUT) motor(OFF);			
-				// Otherwise motor stays in last mode (full ON or OFF)
-				break;
-
-			case TAPONOFF:
-				// Changes state when foot pedal is pressed
-				if (footpedal) {
-					if (motorOn) motor(OFF);	// Turns motor OFF if ON
-					else softstart(mode);		// Turns motor ON if OFF
-				}
-				// Turns motor OFF if the cat pushed the foot pedal
-				if (millis() - startTime > TIMEOUT) motor(OFF);
-				// Otherwise motor stays in last mode (full ON or OFF)
-				break;
-		}
+ 		knobsetting = readKnob();
+// 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
+// 		ICR1 = 0xFFFF;
+// 		OCR1A = knobsetting;
+// 	}
+		SerialPrint(knobsetting);
+	
+		
 		
 	//	if(checkPedal()) TOGGLE_LED;
 		
