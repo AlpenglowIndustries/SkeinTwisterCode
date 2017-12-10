@@ -5,6 +5,8 @@
 #ifndef _M328P_SERIAL_H_
 #define _M328P_SERIAL_H_
 
+#define F_CPU 1000000ul
+
 void SerialInit (uint16_t baudrate);
 uint8_t SerialRXReady (void);
 uint8_t SerialRX (void);

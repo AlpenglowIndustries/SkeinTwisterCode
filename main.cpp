@@ -5,7 +5,7 @@
  * Author : Sundra
  */ 
 
-#define F_CPU 1000000
+#define F_CPU 1000000ul
 
 #include <avr/io.h>
 #include <util/delay.h>
@@ -205,6 +205,8 @@ int main(void)
 	const uint16_t knoboffset = mode0setting;		// b, in equation y = mx + b where y is knobadj and x is knobsetting
 	const uint16_t knobslope = rangeTime / (mode2setting - mode0setting);								// m, in above
 	
+	char a = 0;
+	
     while (1) 
     {
 			
@@ -254,11 +256,14 @@ int main(void)
 // 		}
 
  		knobsetting = readKnob();
-// 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
-// 		ICR1 = 0xFFFF;
-// 		OCR1A = knobsetting;
-// 	}
-		SerialPrint(knobsetting);
+// 		ATOMIC_BLOCK(ATOMIC_FORCEON) {
+// 			ICR1 = 0xFFFF;
+// 			OCR1A = knobsetting;
+// 		}
+// 		SerialPrint(knobsetting);
+		
+		SerialTX(a);
+		a++;
 	
 		
 		
