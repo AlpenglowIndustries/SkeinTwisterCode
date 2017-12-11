@@ -23,7 +23,7 @@
 #define START_PWM	5
 #define STOP_PWM	100
 #define PWM_INCT	5
-#define PWM_DELAY	20
+#define PWM_DELAY	50
 #define TIMEOUT 	30000
 #define	DEBOUNCE	75
 #define MOTOROFF	TCCR1B &= ~(1 << CS10)
@@ -58,7 +58,7 @@ static inline void initADC (void) {
 }
 
 static inline void initMotorPWM (void) {
-	TCCR1A |= (1 << COM1A1) | (1 << WGM10); 	// clears OC1A on match when counting up, sets on down, PWM phase correct ICR1 is TOP
+	TCCR1A |= (1 << COM1A1) | (1 << WGM11); 	// clears OC1A on match when counting up, sets on down, PWM phase correct ICR1 is TOP
 	TCCR1B |= (1 << WGM13);						// PWM phase correct ICR1 is TOP
 	ATOMIC_BLOCK(ATOMIC_FORCEON){				// atomic operation for 16-bit register writes
 		OCR1A = 0;								// should start as solid off
@@ -191,7 +191,7 @@ int main(void)
 	
 	// Knob and Foot Pedal variables
 	uint8_t mode = AUTOMATIC;
-	uint16_t knobsetting;
+	uint16_t knobsetting = 5;
 	uint8_t footpedal = 0;
 	uint32_t setTime = 0;
 	uint32_t startTime = 0;
@@ -256,19 +256,31 @@ int main(void)
 // 				break;
 // 		}
 
- 		knobsetting = readKnob();
-// 		ATOMIC_BLOCK(ATOMIC_FORCEON) {
-// 			ICR1 = 0xFFFF;
-// 			OCR1A = knobsetting;
-// 		}
-//		SerialPrint(knobsetting);
-		
-// 		SerialTX(a);
-/*		a++;*/
+ //		knobsetting = readKnob();
+
+
+		for (knobsetting = 5; knobsetting < 101; knobsetting+=5){
+			ATOMIC_BLOCK(ATOMIC_FORCEON) {
+				OCR1A = knobsetting;
+			}
+					SerialPrint(knobsetting);
+					SerialPrint("\n");
+			_delay_ms(50);
+		}
+
+		for (knobsetting = 100; knobsetting < 105; knobsetting-=5){
+			ATOMIC_BLOCK(ATOMIC_FORCEON) {
+				OCR1A = knobsetting;
+			}
+					SerialPrint(knobsetting);
+					SerialPrint("\n");
+			_delay_ms(50);
+		}
+
 
 		SerialPrint(knobsetting);
 		SerialPrint("\n");
-		_delay_ms(100);
+ //		_delay_ms(100);
 	
 		
 		
