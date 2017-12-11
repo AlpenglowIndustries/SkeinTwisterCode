@@ -550,11 +550,11 @@ END GROUP
 .debug_pubnames
  *(.debug_pubnames)
 
-.debug_info     0x00000000      0xeac
+.debug_info     0x00000000      0xe9d
  *(.debug_info .gnu.linkonce.wi.*)
  .debug_info    0x00000000      0x5f4 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.2.132/gcc/dev/atmega328p/avr5/crtatmega328p.o
  .debug_info    0x000005f4      0x263 M328P_Serial.o
- .debug_info    0x00000857      0x655 main.o
+ .debug_info    0x00000857      0x646 main.o
 
 .debug_abbrev   0x00000000      0x95a
  *(.debug_abbrev)
@@ -562,11 +562,11 @@ END GROUP
  .debug_abbrev  0x000005a2      0x11c M328P_Serial.o
  .debug_abbrev  0x000006be      0x29c main.o
 
-.debug_line     0x00000000      0x6a7
+.debug_line     0x00000000      0x6ad
  *(.debug_line .debug_line.* .debug_line_end)
  .debug_line    0x00000000      0x133 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.2.132/gcc/dev/atmega328p/avr5/crtatmega328p.o
  .debug_line    0x00000133      0x1ae M328P_Serial.o
- .debug_line    0x000002e1      0x3c6 main.o
+ .debug_line    0x000002e1      0x3cc main.o
 
 .debug_frame    0x00000000      0x204
  *(.debug_frame)
@@ -581,10 +581,10 @@ END GROUP
  .debug_str     0x00000498      0x221 main.o
                                 0x410 (size before relaxing)
 
-.debug_loc      0x00000000      0x67d
+.debug_loc      0x00000000      0x695
  *(.debug_loc)
  .debug_loc     0x00000000      0x206 M328P_Serial.o
- .debug_loc     0x00000206      0x477 main.o
+ .debug_loc     0x00000206      0x48f main.o
 
 .debug_macinfo
  *(.debug_macinfo)

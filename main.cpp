@@ -49,9 +49,10 @@ static inline void initFootPedal (void) {
 
 static inline void initADC (void) {
 	DIDR0 |= (1 << KNOB);					// disables digital input filter on KNOB
-	ADMUX = (1 << KNOB);					// sets reference to AREF (default), KNOB input muxed, right-adjusted result (default)
+	ADMUX = 0;								// sets reference to AREF (default), KNOB input muxed, right-adjusted result (default)
 	ADCSRA = (1 << ADPS1) | (1 << ADPS0);	// pre-scalar of clock/8.  (ADC clock between 50 and 200 kHz for 10 bit res, for F_CPU = 1Mhz, pre-scalar of 5 to 20)
-	ADCSRA |= 1 << ADEN;					// enables ADC
+	PRR &= ~(1 << PRADC);					// clears power reduction ADC register
+	ADCSRA |= (1 << ADEN);					// enables ADC
 	ADCSRA |= (1 << ADSC);					// performs one conversion, throw away to start
 	while (ADCSRA & (1 << ADSC)); 			// waits for conversion to be done
 }
@@ -88,7 +89,7 @@ uint16_t readKnob() {
 	ADCSRA |= (1 << ADSC);		// starts conversion
 	while (ADCSRA & (1 << ADSC)); // waits for conversion to be done
 	result = ADCL;
-	result |= ADCH << 8;
+	result |= (ADCH << 8);
 	return result;
 }
 
@@ -265,7 +266,6 @@ int main(void)
 // 		SerialTX(a);
 /*		a++;*/
 
-		knobsetting = 798;
 		SerialPrint(knobsetting);
 		SerialPrint("\n");
 		_delay_ms(100);

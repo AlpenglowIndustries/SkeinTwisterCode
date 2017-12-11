@@ -15,19 +15,19 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY
   5 .debug_aranges 000000b0  00000000  00000000  00000a24  2**0
                   CONTENTS, READONLY, DEBUGGING
-  6 .debug_info   00000eac  00000000  00000000  00000ad4  2**0
+  6 .debug_info   00000e9d  00000000  00000000  00000ad4  2**0
                   CONTENTS, READONLY, DEBUGGING
-  7 .debug_abbrev 0000095a  00000000  00000000  00001980  2**0
+  7 .debug_abbrev 0000095a  00000000  00000000  00001971  2**0
                   CONTENTS, READONLY, DEBUGGING
-  8 .debug_line   000006a7  00000000  00000000  000022da  2**0
+  8 .debug_line   000006ad  00000000  00000000  000022cb  2**0
                   CONTENTS, READONLY, DEBUGGING
-  9 .debug_frame  00000204  00000000  00000000  00002984  2**2
+  9 .debug_frame  00000204  00000000  00000000  00002978  2**2
                   CONTENTS, READONLY, DEBUGGING
- 10 .debug_str    000006b9  00000000  00000000  00002b88  2**0
+ 10 .debug_str    000006b9  00000000  00000000  00002b7c  2**0
                   CONTENTS, READONLY, DEBUGGING
- 11 .debug_loc    0000067d  00000000  00000000  00003241  2**0
+ 11 .debug_loc    00000695  00000000  00000000  00003235  2**0
                   CONTENTS, READONLY, DEBUGGING
- 12 .debug_ranges 00000090  00000000  00000000  000038be  2**0
+ 12 .debug_ranges 00000090  00000000  00000000  000038ca  2**0
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -387,10 +387,10 @@ static __inline__ uint8_t __iCliRetVal(void)
  274:	10 92 89 00 	sts	0x0089, r1	; 0x800089 <__TEXT_REGION_LENGTH__+0x7e0089>
  278:	10 92 88 00 	sts	0x0088, r1	; 0x800088 <__TEXT_REGION_LENGTH__+0x7e0088>
 		ICR1 = STOP_PWM;						// sets TOP to 100, freq = 10 kHz = F_CPU/(2*prescaler*TOP)
- 27c:	84 e6       	ldi	r24, 0x64	; 100
- 27e:	90 e0       	ldi	r25, 0x00	; 0
- 280:	90 93 87 00 	sts	0x0087, r25	; 0x800087 <__TEXT_REGION_LENGTH__+0x7e0087>
- 284:	80 93 86 00 	sts	0x0086, r24	; 0x800086 <__TEXT_REGION_LENGTH__+0x7e0086>
+ 27c:	a4 e6       	ldi	r26, 0x64	; 100
+ 27e:	b0 e0       	ldi	r27, 0x00	; 0
+ 280:	b0 93 87 00 	sts	0x0087, r27	; 0x800087 <__TEXT_REGION_LENGTH__+0x7e0087>
+ 284:	a0 93 86 00 	sts	0x0086, r26	; 0x800086 <__TEXT_REGION_LENGTH__+0x7e0086>
     return 1;
 }
 
@@ -414,64 +414,65 @@ static inline void initADC (void) {
  294:	80 81       	ld	r24, Z
  296:	81 60       	ori	r24, 0x01	; 1
  298:	80 83       	st	Z, r24
-	ADMUX = (1 << KNOB);					// sets reference to AREF (default), KNOB input muxed, right-adjusted result (default)
- 29a:	81 e0       	ldi	r24, 0x01	; 1
- 29c:	80 93 7c 00 	sts	0x007C, r24	; 0x80007c <__TEXT_REGION_LENGTH__+0x7e007c>
+	ADMUX = 0;								// sets reference to AREF (default), KNOB input muxed, right-adjusted result (default)
+ 29a:	10 92 7c 00 	sts	0x007C, r1	; 0x80007c <__TEXT_REGION_LENGTH__+0x7e007c>
 	ADCSRA = (1 << ADPS1) | (1 << ADPS0);	// pre-scalar of clock/8.  (ADC clock between 50 and 200 kHz for 10 bit res, for F_CPU = 1Mhz, pre-scalar of 5 to 20)
- 2a0:	ea e7       	ldi	r30, 0x7A	; 122
- 2a2:	f0 e0       	ldi	r31, 0x00	; 0
- 2a4:	83 e0       	ldi	r24, 0x03	; 3
- 2a6:	80 83       	st	Z, r24
-	ADCSRA |= 1 << ADEN;					// enables ADC
- 2a8:	80 81       	ld	r24, Z
- 2aa:	80 68       	ori	r24, 0x80	; 128
- 2ac:	80 83       	st	Z, r24
+ 29e:	ea e7       	ldi	r30, 0x7A	; 122
+ 2a0:	f0 e0       	ldi	r31, 0x00	; 0
+ 2a2:	83 e0       	ldi	r24, 0x03	; 3
+ 2a4:	80 83       	st	Z, r24
+	PRR &= ~(1 << PRADC);					// clears power reduction ADC register
+ 2a6:	8c 91       	ld	r24, X
+ 2a8:	8e 7f       	andi	r24, 0xFE	; 254
+ 2aa:	8c 93       	st	X, r24
+	ADCSRA |= (1 << ADEN);					// enables ADC
+ 2ac:	80 81       	ld	r24, Z
+ 2ae:	80 68       	ori	r24, 0x80	; 128
+ 2b0:	80 83       	st	Z, r24
 	ADCSRA |= (1 << ADSC);					// performs one conversion, throw away to start
- 2ae:	80 81       	ld	r24, Z
- 2b0:	80 64       	ori	r24, 0x40	; 64
- 2b2:	80 83       	st	Z, r24
+ 2b2:	80 81       	ld	r24, Z
+ 2b4:	80 64       	ori	r24, 0x40	; 64
+ 2b6:	80 83       	st	Z, r24
 	while (ADCSRA & (1 << ADSC)); 			// waits for conversion to be done
- 2b4:	80 81       	ld	r24, Z
- 2b6:	86 fd       	sbrc	r24, 6
- 2b8:	fd cf       	rjmp	.-6      	; 0x2b4 <main+0x80>
+ 2b8:	80 81       	ld	r24, Z
+ 2ba:	86 fd       	sbrc	r24, 6
+ 2bc:	fd cf       	rjmp	.-6      	; 0x2b8 <main+0x84>
 	initMillisTimer();
 	initOutputs();
 	initFootPedal();
 	initMotorPWM();
 	initADC();
 	SerialInit(9600);
- 2ba:	80 e8       	ldi	r24, 0x80	; 128
- 2bc:	95 e2       	ldi	r25, 0x25	; 37
- 2be:	0e 94 53 00 	call	0xa6	; 0xa6 <_Z10SerialInitj>
+ 2be:	80 e8       	ldi	r24, 0x80	; 128
+ 2c0:	95 e2       	ldi	r25, 0x25	; 37
+ 2c2:	0e 94 53 00 	call	0xa6	; 0xa6 <_Z10SerialInitj>
 	sei();
- 2c2:	78 94       	sei
+ 2c6:	78 94       	sei
 	
 	uint32_t ledBlinkTime = 0;
- 2c4:	c1 2c       	mov	r12, r1
- 2c6:	d1 2c       	mov	r13, r1
- 2c8:	76 01       	movw	r14, r12
+ 2c8:	c1 2c       	mov	r12, r1
+ 2ca:	d1 2c       	mov	r13, r1
+ 2cc:	76 01       	movw	r14, r12
 		
 	//	if(checkPedal()) TOGGLE_LED;
 		
 		// Blinks LED
 		if (millis() - ledBlinkTime > 500)	{
 			TOGGLE_LED;
- 2ca:	c0 e4       	ldi	r28, 0x40	; 64
+ 2ce:	c0 e4       	ldi	r28, 0x40	; 64
 // 				if (millis() - startTime > TIMEOUT) motor(OFF);
 // 				// Otherwise motor stays in last mode (full ON or OFF)
 // 				break;
 // 		}
 
  		knobsetting = readKnob();
- 2cc:	0e 94 b7 00 	call	0x16e	; 0x16e <_Z8readKnobv>
+ 2d0:	0e 94 b7 00 	call	0x16e	; 0x16e <_Z8readKnobv>
+//		SerialPrint(knobsetting);
 		
 // 		SerialTX(a);
 /*		a++;*/
 
-		knobsetting = 798;
 		SerialPrint(knobsetting);
- 2d0:	8e e1       	ldi	r24, 0x1E	; 30
- 2d2:	93 e0       	ldi	r25, 0x03	; 3
  2d4:	0e 94 82 00 	call	0x104	; 0x104 <_Z11SerialPrintj>
 		SerialPrint("\n");
  2d8:	83 e0       	ldi	r24, 0x03	; 3
@@ -506,7 +507,7 @@ static inline void initADC (void) {
  2fe:	91 40       	sbci	r25, 0x01	; 1
  300:	a1 05       	cpc	r26, r1
  302:	b1 05       	cpc	r27, r1
- 304:	18 f3       	brcs	.-58     	; 0x2cc <main+0x98>
+ 304:	28 f3       	brcs	.-54     	; 0x2d0 <main+0x9c>
 			TOGGLE_LED;
  306:	8b b1       	in	r24, 0x0b	; 11
  308:	8c 27       	eor	r24, r28
@@ -515,7 +516,7 @@ static inline void initADC (void) {
  30c:	0e 94 ac 00 	call	0x158	; 0x158 <_Z6millisv>
  310:	6b 01       	movw	r12, r22
  312:	7c 01       	movw	r14, r24
- 314:	db cf       	rjmp	.-74     	; 0x2cc <main+0x98>
+ 314:	dd cf       	rjmp	.-70     	; 0x2d0 <main+0x9c>
 
 00000316 <sprintf>:
  316:	ae e0       	ldi	r26, 0x0E	; 14
