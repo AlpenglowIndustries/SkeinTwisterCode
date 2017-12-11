@@ -7,11 +7,14 @@
 // Asynchronous Serial UART Functions for ATMEGA328P
 
 void SerialInit (uint16_t baudrate) {
-	uint16_t prescaler = ((F_CPU << 4) / baudrate) - 1;
-	UBRR0H = (uint8_t) (prescaler >> 8);		// sets baud rate, no multiplier
-	UBRR0L = (uint8_t) prescaler;
-	UCSR0B = (1 << RXEN0) | (1 << TXEN0);	// enables RX and TX
+// 	uint16_t prescaler = ((F_CPU >> 4) / baudrate) - 1;
+// 	UBRR0H = (uint8_t) (prescaler >> 8);		// sets baud rate, no multiplier
+// 	UBRR0L = (uint8_t) prescaler;
+	UBRR0H = 0;		// sets baud rate, no multiplier
+	UBRR0L = 12;
+	UCSR0A |= (1 << U2X0);
 	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);	// async no parity 1 stop bit (default), 8 data bits
+	UCSR0B = (1 << RXEN0) | (1 << TXEN0);	// enables RX and TX
 }
 
 uint8_t SerialRXReady (void) {

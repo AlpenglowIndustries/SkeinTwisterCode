@@ -205,7 +205,7 @@ int main(void)
 	const uint16_t knoboffset = mode0setting;		// b, in equation y = mx + b where y is knobadj and x is knobsetting
 	const uint16_t knobslope = rangeTime / (mode2setting - mode0setting);								// m, in above
 	
-	char a = 0;
+	uint8_t a = 0;
 	
     while (1) 
     {
@@ -260,10 +260,15 @@ int main(void)
 // 			ICR1 = 0xFFFF;
 // 			OCR1A = knobsetting;
 // 		}
-// 		SerialPrint(knobsetting);
+//		SerialPrint(knobsetting);
 		
-		SerialTX(a);
-		a++;
+// 		SerialTX(a);
+/*		a++;*/
+
+		knobsetting = 798;
+		SerialPrint(knobsetting);
+		SerialPrint("\n");
+		_delay_ms(100);
 	
 		
 		
