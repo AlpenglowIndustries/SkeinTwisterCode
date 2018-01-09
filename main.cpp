@@ -20,14 +20,12 @@
 #define PEDAL	PORTD2
 
 #define TOGGLE_LED	(PORTD ^= (1 << LED))
-#define START_PWM	5
-#define STOP_PWM	100
+#define MIN_PWM	5
+#define MAX_PWM	50
 #define PWM_INCT	5
 #define PWM_DELAY	50
 #define TIMEOUT 	30000
 #define	DEBOUNCE	75
-#define MOTOROFF	TCCR1B &= ~(1 << CS10)
-#define MOTORON		TCCR1B |= (1 << CS10)
 #define PEDALISPRESSED	bit_is_clear(PIND, PEDAL)
 #define PEDALISRELEASED	bit_is_set(PIND, PEDAL)
 #define OFF 0
@@ -36,10 +34,18 @@
 #define AUTOMATIC	1
 #define TAPONOFF	2
 
+//---------ISR Variables--------------
+volatile uint32_t milliseconds = 0;
+volatile uint8_t pedalPress = 0;
+volatile uint32_t pedalTime = 0;
+
+//---------Global Variables-----------
+uint8_t motorOn = OFF;
+
+
 static inline void initOutputs (void) {
 	// sets the following to outputs
 	DDRD |= (1 << LED);
-	DDRB |= (1 << FET);			
 }
 
 static inline void initFootPedal (void) {
@@ -62,9 +68,9 @@ static inline void initMotorPWM (void) {
 	TCCR1B |= (1 << WGM13);						// PWM phase correct ICR1 is TOP
 	ATOMIC_BLOCK(ATOMIC_FORCEON){				// atomic operation for 16-bit register writes
 		OCR1A = 0;								// should start as solid off
-		ICR1 = STOP_PWM;						// sets TOP to 100, freq = 10 kHz = F_CPU/(2*prescaler*TOP)
+		ICR1 = MAX_PWM;							// sets TOP to 500, freq = 1.25 kHz = F_CPU/(2*prescaler*TOP)
 	}
-	TCCR1B |= (1 << CS10);						// enables the clock with a prescaler of 1
+	TCCR1B |= (1 << CS11);						// enables the clock with a prescaler of 8
 }
 
 static inline void initMillisTimer (void) {
@@ -75,7 +81,6 @@ static inline void initMillisTimer (void) {
 	TCCR0B |= (1 << CS01);					// starts timer with prescalar: F_CPU/8 (125,000), no output waveforms
 }
 
-volatile uint32_t milliseconds = 0;
 uint32_t millis(void) {
 	uint32_t mscopy;
 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
@@ -93,22 +98,28 @@ uint16_t readKnob() {
 	return result;
 }
 
-uint8_t motorOn = OFF;
+void setPWM(uint16_t pwm) {
+	ATOMIC_BLOCK(ATOMIC_FORCEON){				// atomic operation for 16-bit register writes
+		OCR1A = pwm;								// 
+	}
+}
+
 void motor(uint8_t state) {
 	if (!state) {
-		MOTOROFF;
+		setPWM(0);
+		DDRB &= ~(1 << FET);		// disables output (pull-down res on fet gate serves to shut off motor power)
+		TCCR1B &= ~(1 << CS10);		// stops timer
 		motorOn = OFF;
 	}
 
 	else {
 		motorOn = ON;
-		OCR1A = 0;
-		MOTORON;
+		setPWM(0);
+		TCCR1B |= (1 << CS10);		// starts timer
+		DDRB |= (1 << FET);			// enables output pin
 	}
 }
 
-volatile uint8_t pedalPress = 0;
-volatile uint32_t pedalTime = 0;
 uint8_t checkPedal() {
 	EIMSK &= ~(1 << INT0);					// disables INT0 to guarantee clearing pedalPress
 	if (pedalPress && (millis() - pedalTime > DEBOUNCE)) {
@@ -126,17 +137,19 @@ void softstart(uint8_t runmode)  {
 
 	// blips motor to indicate that it won't automatically stop
 	if (runmode == TAPONOFF) {
-		OCR1A = START_PWM;
+		setPWM(MIN_PWM);
 		_delay_ms(50);
-		OCR1A = 0;
+		setPWM(0);
 		_delay_ms(100);
 	}
 
 	// ramps up speed
 	uint8_t i;
-	for (i = START_PWM; i < STOP_PWM; i+=PWM_INCT) {
-		OCR1A = i;
+	for (i = MIN_PWM; i < MAX_PWM; i+=PWM_INCT) {
+		setPWM(i);
 		_delay_ms(PWM_DELAY);
+		
+		if (MAX_PWM - i <= PWM_INCT) setPWM(MAX_PWM);;  // ensures full on is reached regardless of increment
 
 		// checks for commanded stops
 		if (runmode == PRESSHOLD)	{
@@ -191,7 +204,7 @@ int main(void)
 	
 	// Knob and Foot Pedal variables
 	uint8_t mode = AUTOMATIC;
-	uint16_t knobsetting = 5;
+	uint16_t knobsetting;
 	uint8_t footpedal = 0;
 	uint32_t setTime = 0;
 	uint32_t startTime = 0;
@@ -206,90 +219,72 @@ int main(void)
 	const uint16_t knoboffset = mode0setting;		// b, in equation y = mx + b where y is knobadj and x is knobsetting
 	const uint16_t knobslope = rangeTime / (mode2setting - mode0setting);								// m, in above
 	
-	uint8_t a = 0;
-	
     while (1) 
     {
 			
-// 		// Reads pot and determines mode
-// 		knobsetting = readKnob();
-// 		if (knobsetting < mode0setting) mode = PRESSHOLD;
-// 		else if (knobsetting > mode2setting) mode = TAPONOFF;
-// 		else {
-// 			mode = AUTOMATIC;
-// 			setTime = (knobsetting - knoboffset) * knobslope + minimumTime;			// scales trim pot setting to milliseconds
-// 		}
-// 
-// 		// Gets the footpedal status and records the time if pressed
-// 		footpedal = checkPedal();
-// 		if (footpedal) startTime = millis();
-// 
-// 		// State Machine
-// 		switch (mode) {
-// 			case PRESSHOLD:
-// 				if (footpedal) softstart(mode);				// Turns ON if pedal just pressed
-// 				else if (PEDALISRELEASED) motor(OFF);		// Turns OFF is pedal is released
-// 				// Otherwise motor stays in last mode (full ON or OFF)
-// 				break;
-// 
-// 			case AUTOMATIC:
-// 				// Changes state when foot pedal is pressed
-// 				if (footpedal) {
-// 					if (motorOn) motor(OFF);	// Turns motor OFF if ON
-// 					else softstart(mode);		// Turns motor ON if OFF
-// 				}
-// 				// Turns motor OFF if enough time has elapsed
-// 				elapsedTime = millis() - startTime;
-// 				if (elapsedTime > setTime || elapsedTime > TIMEOUT) motor(OFF);			
-// 				// Otherwise motor stays in last mode (full ON or OFF)
-// 				break;
-// 
-// 			case TAPONOFF:
-// 				// Changes state when foot pedal is pressed
-// 				if (footpedal) {
-// 					if (motorOn) motor(OFF);	// Turns motor OFF if ON
-// 					else softstart(mode);		// Turns motor ON if OFF
-// 				}
-// 				// Turns motor OFF if the cat pushed the foot pedal
-// 				if (millis() - startTime > TIMEOUT) motor(OFF);
-// 				// Otherwise motor stays in last mode (full ON or OFF)
-// 				break;
-// 		}
+		// Reads pot and determines mode
+		knobsetting = readKnob();
+		if (knobsetting < mode0setting) mode = PRESSHOLD;
+		else if (knobsetting > mode2setting) mode = TAPONOFF;
+		else {
+			mode = AUTOMATIC;
+			//setTime = (knobsetting - knoboffset) * knobslope + minimumTime;			// scales trim pot setting to milliseconds
+		}
+		setTime = (knobsetting - knoboffset) * knobslope + minimumTime;			// scales trim pot setting to milliseconds
 
- //		knobsetting = readKnob();
+		// Gets the footpedal status and records the time if pressed
+		
+		footpedal = checkPedal();
+		if (footpedal) startTime = millis();
+ 
+		// State Machine
+		switch (mode) {
+			case PRESSHOLD:
+				if (footpedal) softstart(mode);				// Turns ON if pedal just pressed
+				else if (PEDALISRELEASED) motor(OFF);		// Turns OFF is pedal is released
+				// Otherwise motor stays in last mode (full ON or OFF)
+				break;
 
+			case AUTOMATIC:
+				// Changes state when foot pedal is pressed
+				if (footpedal) {
+					if (motorOn) motor(OFF);	// Turns motor OFF if ON
+					else softstart(mode);		// Turns motor ON if OFF
+				}
+				// Turns motor OFF if enough time has elapsed
+				elapsedTime = millis() - startTime;
+				if (elapsedTime > setTime || elapsedTime > TIMEOUT) motor(OFF);	
+				// Otherwise motor stays in last mode (full ON or OFF)
+				break;
 
-		for (knobsetting = 5; knobsetting < 101; knobsetting+=5){
-			ATOMIC_BLOCK(ATOMIC_FORCEON) {
-				OCR1A = knobsetting;
-			}
-					SerialPrint(knobsetting);
-					SerialPrint("\n");
-			_delay_ms(50);
+			case TAPONOFF:
+				// Changes state when foot pedal is pressed
+				if (footpedal) {
+					if (motorOn) motor(OFF);	// Turns motor OFF if ON
+					else softstart(mode);		// Turns motor ON if OFF
+				}
+				// Turns motor OFF if the cat pushed the foot pedal
+				if (millis() - startTime > TIMEOUT) motor(OFF);
+				// Otherwise motor stays in last mode (full ON or OFF)
+				break;
 		}
 
-		for (knobsetting = 100; knobsetting < 105; knobsetting-=5){
-			ATOMIC_BLOCK(ATOMIC_FORCEON) {
-				OCR1A = knobsetting;
-			}
-					SerialPrint(knobsetting);
-					SerialPrint("\n");
-			_delay_ms(50);
-		}
-
-
-		SerialPrint(knobsetting);
-		SerialPrint("\n");
- //		_delay_ms(100);
-	
+//  	knobsetting = readKnob();
+// 		ATOMIC_BLOCK(ATOMIC_FORCEON) {
+// 			OCR1A = knobsetting;
+// 		}
+// 		SerialPrint(knobsetting);
+// 		SerialPrint("\n");
+// 		_delay_ms(100);
 		
-		
-	//	if(checkPedal()) TOGGLE_LED;
+//		if(checkPedal()) TOGGLE_LED;
 		
 		// Blinks LED
-		if (millis() - ledBlinkTime > 500)	{
+		if (millis() - ledBlinkTime > 250)	{
 			TOGGLE_LED;
 			ledBlinkTime = millis();
+			SerialPrint(knobsetting);
+ 			SerialPrint("\n");
 		}
 		
     } // end of while(1)

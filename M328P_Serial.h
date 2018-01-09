@@ -15,5 +15,6 @@ void SerialTX (uint8_t data);
 void SerialPrint (const char *stringtoprint);
 void SerialPrint (uint8_t byte);
 void SerialPrint (uint16_t twobytes);
+void SerialPrint (uint32_t fourbytes);
 
 #endif
