@@ -211,13 +211,13 @@ int main(void)
 	uint32_t elapsedTime = 0;
 
 	// Constants for scaling & dealing with knob settings
-	const uint16_t mode0setting = 5;		// 3 detents
-	const uint16_t mode2setting = 1018;		// 3 detents
-	const uint16_t minimumTime = 1500;		// min knob set time in milliseconds
-	const uint16_t maximumTime = 11500;		// max knob set time in milliseconds
-	const uint16_t rangeTime = maximumTime - minimumTime;
+	const uint16_t mode0setting = 15;		// 3 detents
+	const uint16_t mode2setting = 1010;		// 3 detents
+	const uint16_t minimumTime = 1167;		// min knob set time in milliseconds 
+	const uint16_t maximumTime = 7833;		// max knob set time in milliseconds
+	const uint32_t rangeTime = maximumTime - minimumTime;
 	const uint16_t knoboffset = mode0setting;		// b, in equation y = mx + b where y is knobadj and x is knobsetting
-	const uint16_t knobslope = rangeTime / (mode2setting - mode0setting);								// m, in above
+	const uint32_t knobslope = (rangeTime * 10) / (mode2setting - mode0setting);								// m, in above
 	
     while (1) 
     {
@@ -230,7 +230,7 @@ int main(void)
 			mode = AUTOMATIC;
 			//setTime = (knobsetting - knoboffset) * knobslope + minimumTime;			// scales trim pot setting to milliseconds
 		}
-		setTime = (knobsetting - knoboffset) * knobslope + minimumTime;			// scales trim pot setting to milliseconds
+		setTime = ((uint32_t) (knobsetting - knoboffset) * knobslope) / 10 + minimumTime;			// scales trim pot setting to milliseconds
 
 		// Gets the footpedal status and records the time if pressed
 		
@@ -283,8 +283,8 @@ int main(void)
 		if (millis() - ledBlinkTime > 250)	{
 			TOGGLE_LED;
 			ledBlinkTime = millis();
-			SerialPrint(knobsetting);
- 			SerialPrint("\n");
+	//		SerialPrint(knobsetting);
+ 	//		SerialPrint("\n");
 		}
 		
     } // end of while(1)
