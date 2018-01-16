@@ -5,7 +5,7 @@
 
 #define	ADDR_FIRSTBLOCK		0x0002
 #define BLOCKSIZE		6
-#define MAXWRITES		3
+#define MAXWRITES		65535
 
 void eeWriteByte (uint16_t addy, uint8_t eedata)  {
 	cli();
@@ -99,13 +99,18 @@ void eeInit (void) {
 }
 
 // writes time to EEPROM
+// argument: elapsed time of current run in ms
+// reads existing accumulated time (stored in tenths of seconds) and adds elapsed time
 // checks the count first, increments the block if over the max # of writes
+// writes new total time in tenths of seconds
 void saveTime (uint32_t time) {
 	uint16_t addy = eeRead16(ADDR_CURRENTADDY);
 	uint16_t count = eeRead16(addy);
+	uint32_t totalTime = eeRead32(addy+2);
+	totalTime += time/100;
 	if (count < MAXWRITES) {
 		eeWrite16(addy, count+1);
-		eeWrite32(addy+2, time);
+		eeWrite32(addy+2, totalTime);
 	}
 	else {
 		count = 1;
@@ -113,7 +118,7 @@ void saveTime (uint32_t time) {
 		eeWrite16(ADDR_CURRENTADDY, addy);
 		eeClearNext(addy, BLOCKSIZE);
 		eeWrite16(addy, count);
-		eeWrite32(addy+2, time);
+		eeWrite32(addy+2, totalTime);
 	}
 }
 

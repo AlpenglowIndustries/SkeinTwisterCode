@@ -42,6 +42,7 @@ volatile uint32_t pedalTime = 0;
 
 //---------Global Variables-----------
 uint8_t motorOn = OFF;
+uint32_t startTime = 0;
 
 
 static inline void initOutputs (void) {
@@ -105,12 +106,36 @@ void setPWM(uint16_t pwm) {
 	}
 }
 
+void printStats () {
+	uint16_t blockaddy = eeRead16(ADDR_CURRENTADDY);
+	SerialPrint(blockaddy);
+	SerialPrint("\n");
+	uint16_t count = eeRead16(blockaddy);
+	uint32_t time = eeRead32(blockaddy+2);
+	SerialPrint(count);
+	SerialPrint("\n");
+	SerialPrint(time);
+	SerialPrint("\n");
+	SerialPrint("\n");
+	uint8_t i = 0;
+	for (i = 2; i < 14; i++) {
+		uint8_t byteread = eeReadByte(i);
+		SerialPrint(byteread);
+		SerialPrint("\n");
+	}
+	SerialPrint("\n");
+	SerialPrint("\n");
+}
+
 void motor(uint8_t state) {
 	if (!state) {
 		setPWM(0);
 		DDRB &= ~(1 << FET);		// disables output (pull-down res on fet gate serves to shut off motor power)
 		TCCR1B &= ~(1 << CS10);		// stops timer
 		motorOn = OFF;
+		uint32_t elapsedTime = millis() - startTime;
+		saveTime(elapsedTime);
+//		printStats();
 	}
 
 	else {
@@ -134,6 +159,7 @@ uint8_t checkPedal() {
 }
 
 void softstart(uint8_t runmode)  {
+	startTime = millis();
 	motor(ON);
 
 	// blips motor to indicate that it won't automatically stop
@@ -199,11 +225,9 @@ int main(void)
 	initMotorPWM();
 	initADC();
 	SerialInit(9600);
+//	eeErase(16);
 	eeInit();
 	sei();
-	
-	// EEPROM testing
-	uint16_t eeTest = eeRead16(0);
 	
 	// Time variables
 	uint32_t ledBlinkTime = 0;
@@ -213,7 +237,6 @@ int main(void)
 	uint16_t knobsetting;
 	uint8_t footpedal = 0;
 	uint32_t setTime = 0;
-	uint32_t startTime = 0;
 	uint32_t elapsedTime = 0;
 
 	// Constants for scaling & dealing with knob settings
@@ -239,15 +262,13 @@ int main(void)
 		setTime = ((uint32_t) (knobsetting - knoboffset) * knobslope) / 10 + minimumTime;			// scales trim pot setting to milliseconds
 
 		// Gets the footpedal status and records the time if pressed
-		
 		footpedal = checkPedal();
-		if (footpedal) startTime = millis();
  
 		// State Machine
 		switch (mode) {
 			case PRESSHOLD:
 				if (footpedal) softstart(mode);				// Turns ON if pedal just pressed
-				else if (PEDALISRELEASED) motor(OFF);		// Turns OFF is pedal is released
+				if (motorOn && PEDALISRELEASED) motor(OFF);		// Turns OFF is pedal is released
 				// Otherwise motor stays in last mode (full ON or OFF)
 				break;
 
@@ -258,8 +279,10 @@ int main(void)
 					else softstart(mode);		// Turns motor ON if OFF
 				}
 				// Turns motor OFF if enough time has elapsed
-				elapsedTime = millis() - startTime;
-				if (elapsedTime > setTime || elapsedTime > TIMEOUT) motor(OFF);	
+				if (motorOn) {
+					elapsedTime = millis() - startTime;
+					if (elapsedTime > setTime || elapsedTime > TIMEOUT) motor(OFF);	
+				}
 				// Otherwise motor stays in last mode (full ON or OFF)
 				break;
 
@@ -270,7 +293,9 @@ int main(void)
 					else softstart(mode);		// Turns motor ON if OFF
 				}
 				// Turns motor OFF if the cat pushed the foot pedal
-				if (millis() - startTime > TIMEOUT) motor(OFF);
+				if (motorOn) {
+					if (millis() - startTime > TIMEOUT) motor(OFF);
+				}
 				// Otherwise motor stays in last mode (full ON or OFF)
 				break;
 		}
@@ -279,19 +304,8 @@ int main(void)
 		if (millis() - ledBlinkTime > 500)	{
 			TOGGLE_LED;
 			ledBlinkTime = millis();
-
-			SerialPrint(eeTest);
-			SerialPrint("\n");	
-			uint8_t i = 0;
-			for (i = 0; i < 12; i++) {
-				uint8_t byteread = eeReadByte(i+2);
-				SerialPrint(byteread);
-				SerialPrint("\n");
-			}
-			SerialPrint("\n");
-			SerialPrint("\n");
 		}
-		
+
     } // end of while(1)
 } // end of main()
 

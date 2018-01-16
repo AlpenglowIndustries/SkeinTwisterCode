@@ -17,6 +17,7 @@ void eeErase (uint16_t addy);
 // Specific functions to SkeinTwister
 void eeClearNext (uint16_t addy, uint8_t bytes);
 void eeInit (void);
+void saveTime (uint32_t time);
 
 #endif
 

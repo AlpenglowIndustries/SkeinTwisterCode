@@ -34,6 +34,7 @@ void SerialTX (uint8_t data) {
 	UDR0 = data;
 }
 
+//i can't remember if I did the below comment or not.  It may work?
 //unfuck below pointers
 
 void SerialPrint (const char *stringtoprint) {
