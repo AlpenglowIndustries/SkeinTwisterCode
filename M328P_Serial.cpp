@@ -57,7 +57,7 @@ void SerialPrint (uint16_t twobytes) {
 }
 
 void SerialPrint (uint32_t fourbytes) {
-	char theString[6];
+	char theString[11];
 	sprintf(theString, "%lu", fourbytes);
 	SerialPrint(theString);
 }

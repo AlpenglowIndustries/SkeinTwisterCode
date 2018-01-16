@@ -11,8 +11,9 @@
 #include <util/delay.h>
 #include <util/atomic.h>
 #include <avr/interrupt.h>
-#include <avr/power.h>  //unused?
+//#include <avr/power.h>  //unused?
 #include "M328P_Serial.h"
+#include "M328P_EEPROM.h"
 
 #define KNOB	PINC0
 #define LED		PORTD6
@@ -198,8 +199,13 @@ int main(void)
 	initMotorPWM();
 	initADC();
 	SerialInit(9600);
+	eeInit();
 	sei();
 	
+	// EEPROM testing
+	uint16_t eeTest = eeRead16(0);
+	
+	// Time variables
 	uint32_t ledBlinkTime = 0;
 	
 	// Knob and Foot Pedal variables
@@ -268,23 +274,22 @@ int main(void)
 				// Otherwise motor stays in last mode (full ON or OFF)
 				break;
 		}
-
-//  	knobsetting = readKnob();
-// 		ATOMIC_BLOCK(ATOMIC_FORCEON) {
-// 			OCR1A = knobsetting;
-// 		}
-// 		SerialPrint(knobsetting);
-// 		SerialPrint("\n");
-// 		_delay_ms(100);
-		
-//		if(checkPedal()) TOGGLE_LED;
 		
 		// Blinks LED
-		if (millis() - ledBlinkTime > 250)	{
+		if (millis() - ledBlinkTime > 500)	{
 			TOGGLE_LED;
 			ledBlinkTime = millis();
-	//		SerialPrint(knobsetting);
- 	//		SerialPrint("\n");
+
+			SerialPrint(eeTest);
+			SerialPrint("\n");	
+			uint8_t i = 0;
+			for (i = 0; i < 12; i++) {
+				uint8_t byteread = eeReadByte(i+2);
+				SerialPrint(byteread);
+				SerialPrint("\n");
+			}
+			SerialPrint("\n");
+			SerialPrint("\n");
 		}
 		
     } // end of while(1)

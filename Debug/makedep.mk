@@ -2,6 +2,8 @@
 # Automatically-generated file. Do not edit or delete the file
 ################################################################################
 
+M328P_EEPROM.cpp
+
 M328P_Serial.cpp
 
 main.cpp
