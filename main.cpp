@@ -5,6 +5,11 @@
  * Author : Sundra
  */ 
 
+// FUSE SETTINGS:
+// LOW:  0x62 (default)
+// HIGH: 0xD1 EESAVE enabled (does not overwrite EEPROM on reprogramming)
+// EXT:  0x04 (or 0xFC) BOD enabled @ 4.7V
+
 #define F_CPU 1000000ul
 
 #include <avr/io.h>
