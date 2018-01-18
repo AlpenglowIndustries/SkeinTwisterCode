@@ -7,9 +7,6 @@
 // Asynchronous Serial UART Functions for ATMEGA328P
 
 void SerialInit (uint16_t baudrate) {
-// 	uint16_t prescaler = ((F_CPU >> 4) / baudrate) - 1;
-// 	UBRR0H = (uint8_t) (prescaler >> 8);		// sets baud rate, no multiplier
-// 	UBRR0L = (uint8_t) prescaler;
 	UBRR0H = 0;		// sets baud rate, no multiplier
 	UBRR0L = 12;
 	UCSR0A |= (1 << U2X0);
@@ -21,7 +18,12 @@ uint8_t SerialRXReady (void) {
 	return (UCSR0A & (1 << RXC0));	// 1 if there's unread data in receive buffer
 }
 
+uint8_t SerialGrabByte (void) {
+	return UDR0;
+}
+
 uint8_t SerialRX (void) {
+	while (!(UCSR0A & (1 << RXC0)));
 	return UDR0;
 }
 
@@ -40,9 +42,13 @@ void SerialTX (uint8_t data) {
 void SerialPrint (const char *stringtoprint) {
 	uint8_t i = 0;
 	while (stringtoprint[i]) {
-		SerialTX (stringtoprint[i]);
+		SerialTX(stringtoprint[i]);
 		i++;
 	}
+}
+
+void SerialPrint (char byte) {
+	SerialTX(byte);
 }
 
 void SerialPrint (uint8_t byte) {
@@ -61,4 +67,9 @@ void SerialPrint (uint32_t fourbytes) {
 	char theString[11];
 	sprintf(theString, "%lu", fourbytes);
 	SerialPrint(theString);
+}
+
+void SerialPrintln (const char *stringtoprint) {
+	SerialPrint(stringtoprint);
+	SerialPrint("\n");
 }

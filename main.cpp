@@ -26,6 +26,8 @@
 #define PEDAL	PORTD2
 
 #define TOGGLE_LED	(PORTD ^= (1 << LED))
+#define SET_LED		(PORTD |= (1 << LED))
+#define CLEAR_LED	(PORTD &= ~(1 << LED))
 #define MIN_PWM	5
 #define MAX_PWM	50
 #define PWM_INCT	5
@@ -39,6 +41,8 @@
 #define PRESSHOLD	0
 #define AUTOMATIC	1
 #define TAPONOFF	2
+#define MODE0LIMIT	30
+#define MODE2LIMIT	995
 
 //---------ISR Variables--------------
 volatile uint32_t milliseconds = 0;
@@ -200,6 +204,15 @@ void softstart(uint8_t runmode)  {
 	// exits loop either at full speed or off
 }
 
+void ledFlicker() {
+	uint8_t n;
+	SET_LED;
+	for (n = 0; n < 3; n++) {
+		TOGGLE_LED;
+		_delay_ms(50);
+	}
+}
+
 // interrupts are automatically cleared upon execution of the ISR
 
 ISR(INT0_vect) {
@@ -245,8 +258,10 @@ int main(void)
 	uint32_t elapsedTime = 0;
 
 	// Constants for scaling & dealing with knob settings
-	const uint16_t mode0setting = 15;		// 3 detents
-	const uint16_t mode2setting = 1010;		// 3 detents
+	uint16_t mode0setting = eeRead16(ADDR_MODE0);
+	if (mode0setting > MODE0LIMIT || mode0setting == 65535) mode0setting = 15;		// in case memory is corrupted or new
+	uint16_t mode2setting = eeRead16(ADDR_MODE2);
+	if (mode2setting < MODE2LIMIT || mode2setting == 65535) mode2setting = 1010;	// in case memory is corrupted or new	
 	const uint16_t minimumTime = 1167;		// min knob set time in milliseconds 
 	const uint16_t maximumTime = 7833;		// max knob set time in milliseconds
 	const uint32_t rangeTime = maximumTime - minimumTime;
@@ -265,6 +280,7 @@ int main(void)
 			//setTime = (knobsetting - knoboffset) * knobslope + minimumTime;			// scales trim pot setting to milliseconds
 		}
 		setTime = ((uint32_t) (knobsetting - knoboffset) * knobslope) / 10 + minimumTime;			// scales trim pot setting to milliseconds
+		if (setTime > TIMEOUT) setTime = minimumTime;	// controls rollover
 
 		// Gets the footpedal status and records the time if pressed
 		footpedal = checkPedal();
@@ -309,6 +325,79 @@ int main(void)
 		if (millis() - ledBlinkTime > 500)	{
 			TOGGLE_LED;
 			ledBlinkTime = millis();
+		}
+		
+		// Polls Serial Port
+		if (SerialRXReady()) {
+			char byte = SerialGrabByte();
+			ledFlicker();
+			char ack;
+			switch (byte) {
+				case 'c':
+					SerialPrintln("Current Calibration Values:");
+					SerialPrint("Press Hold: ");
+					SerialPrint(mode0setting);
+					SerialPrintln(" ");
+					SerialPrint("Tap On/Off: ");
+					SerialPrint(mode2setting);
+					SerialPrintln(" ");	
+					SerialPrintln(" ");				
+					SerialPrintln("Turn knob to edge of Press & Hold, and press 'q'....");
+					ack = SerialRX();
+					uint16_t temp;
+					if (ack == 'q') {
+						ledFlicker();
+						temp = readKnob();
+						SerialPrint(temp);		
+						SerialPrintln(" ");			
+						if (temp > MODE0LIMIT) SerialPrintln("Error, cal not saved");
+						else {
+							mode0setting = temp;
+							eeWrite16(ADDR_MODE0, mode0setting);
+						}
+					}
+					else {
+						SerialPrintln("DUMBASS!");
+						break;
+					}
+					SerialPrintln("Turn knob to edge of Tap On Tap Off, and press 'q'....");
+					ack = SerialRX();
+					if (ack == 'q') {
+						ledFlicker();
+						temp = readKnob();
+						SerialPrint(temp);
+						SerialPrintln(" ");
+						if (temp < MODE2LIMIT) SerialPrintln("Error, cal not saved");
+						else {
+							mode2setting = temp;
+							eeWrite16(ADDR_MODE2, mode2setting);
+						}
+					}
+					else {
+						SerialPrintln("DUMBASS!");
+						break;
+					}
+					SerialPrintln("Done!");
+					break;
+				case 'd':
+					eeDump();
+					break;
+				case 'e':
+					SerialPrintln("Erase EEPROM? (y/n)");
+					ack = SerialRX();
+					if (ack == 'y') {
+						eeErase(20);
+						SerialPrintln("Done! Don't forget to reset!");	
+					}
+					break;
+// 				case 'r':
+// 					SerialPrintln("Reset processor? (y/n)");
+// 					ack = SerialRX();
+// 					if (ack == 'y') ;
+// 					break;
+
+			}		
+			
 		}
 
     } // end of while(1)

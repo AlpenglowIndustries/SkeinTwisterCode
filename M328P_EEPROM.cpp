@@ -1,9 +1,10 @@
 
 #include "M328P_EEPROM.h"
+#include "M328P_Serial.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#define	ADDR_FIRSTBLOCK		0x0002
+#define	ADDR_FIRSTBLOCK	6
 #define BLOCKSIZE		6
 #define MAXWRITES		65535
 
@@ -72,7 +73,9 @@ uint32_t eeRead32 (uint16_t addy) {
 
 // Erases EEPROM from beginning to address specified
 // "Erase" means filling with 0xFF
+// if argument is 0, polls for the end of data and erases to there
 void eeErase (uint16_t addy) {
+	if (addy == 0) addy = eeRead16(ADDR_CURRENTADDY) + BLOCKSIZE;
 	uint8_t i = 0;
 	for (i = 0; i <= addy; i++) {
 		eeWriteByte(i, 0xFF);
@@ -122,3 +125,39 @@ void saveTime (uint32_t time) {
 	}
 }
 
+void eeDump (void) {
+	
+	SerialPrint("Mode0 Cal: ");
+	uint16_t data16 = eeRead16(0x0000);
+	SerialPrint(data16);
+	SerialPrint("\n");
+	
+	SerialPrint("Mode2 Cal: ");
+	data16 = eeRead16(0x0002);
+	SerialPrint(data16);
+	SerialPrint("\n");
+	
+	SerialPrint("Curr Block Address: ");
+	data16 = eeRead16(ADDR_CURRENTADDY);
+	SerialPrint(data16);
+	SerialPrint("\n");
+	
+	uint16_t i;
+	uint16_t j = data16;
+	uint32_t data32;
+
+	for (i = ADDR_FIRSTBLOCK ; i <= j; i += BLOCKSIZE) {
+		data16 = eeRead16(i);
+		SerialPrint(i);
+		SerialPrint(": ");
+		SerialPrint(data16);
+		SerialPrint("\n");
+		i += 2;
+		data32 = eeRead32(i);
+		SerialPrint(i);
+		SerialPrint(": ");
+		SerialPrint(data32);		
+		SerialPrint("\n");
+	}
+	SerialPrintln("The End!");
+}
