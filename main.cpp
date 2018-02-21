@@ -10,7 +10,8 @@
 // HIGH: 0xD1 EESAVE enabled (does not overwrite EEPROM on reprogramming)
 // EXT:  0x04 (or 0xFC) BOD enabled @ 4.7V
 
-#define F_CPU 1000000ul
+#define F_CPU	1000000ul
+#define VERSION	"2.00"
 
 #include <avr/io.h>
 #include <util/delay.h>
@@ -380,6 +381,8 @@ int main(void)
 					SerialPrintln("Done!");
 					break;
 				case 'd':
+					SerialPrint("Version: ");
+					SerialPrintln(VERSION);
 					eeDump();
 					break;
 				case 'e':
