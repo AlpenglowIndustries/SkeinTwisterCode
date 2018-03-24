@@ -11,7 +11,7 @@
 // EXT:  0x04 (or 0xFC) BOD enabled @ 4.7V
 
 #define F_CPU	1000000ul
-#define VERSION	"2.00"
+#define VERSION	"2.01"
 
 #include <avr/io.h>
 #include <util/delay.h>
@@ -329,7 +329,7 @@ int main(void)
 		}
 		
 		// Polls Serial Port
-		if (SerialRXReady()) {
+		if (SerialRXReady() && (millis() < 300000)) {
 			char byte = SerialGrabByte();
 			ledFlicker();
 			char ack;
