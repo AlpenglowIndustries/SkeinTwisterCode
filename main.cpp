@@ -335,6 +335,7 @@ int main(void)
 			char ack;
 			switch (byte) {
 				case 'c':
+					SerialPrintln();
 					SerialPrintln("Current Calibration Values:");
 					SerialPrint("Press Hold: ");
 					SerialPrint(mode0setting);
