@@ -1,0 +1,7 @@
+
+ATMega328P:
+-c usbtiny -p m328p -v -U hfuse:w:0xd1:m -U efuse:w:0xfc:m -U flash:w:$(BinDir)\$(TargetName).hex:i
+
+ATMega328PB:
+-c usbtiny -p m328pb -v -U hfuse:w:0xd1:m -U efuse:w:0xf4:m -U flash:w:$(BinDir)\$(TargetName).hex:i
+
